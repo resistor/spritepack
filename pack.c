@@ -17,8 +17,8 @@ unsigned heap_max;
 
 static void init(unsigned w) {
   list = malloc(sizeof(edge_t));
-  list->next = 0;
-  list->prev = 0;
+  list->next = NULL;
+  list->prev = NULL;
   list->height = 0;
   list->left_x = 0;
   list->right_x = w - 1;
@@ -101,16 +101,15 @@ static void raise_edge(edge_t* e) {
 
   edge_t* left = e->prev;
   edge_t* right = e->next;
-  edge_t* ret;
   
   verify_list();
   
   if (!right) {
     left->right_x = e->right_x;
-    left->next = 0;
+    left->next = NULL;
   } else if (!left) {
     right->left_x = e->left_x;
-    right->prev = 0;
+    right->prev = NULL;
   } else {
     if (right->height > left->height)
       left->right_x = e->right_x;
@@ -125,8 +124,8 @@ static void raise_edge(edge_t* e) {
   
   if (list == e) list = e->next;
   
-  e->next = ~0;
-  e->prev = ~0;
+  e->next = (edge_t*) ~0;
+  e->prev = (edge_t*) ~0;
   
   free(e);
 }

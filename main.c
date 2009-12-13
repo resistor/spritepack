@@ -6,7 +6,7 @@
 
 typedef struct Img {
     unsigned char* pixels;
-    unsigned char* filename;
+    char* filename;
     unsigned w, h;
 } img_t;
 
@@ -44,11 +44,11 @@ int main(int argc, char** argv) {
   LodePNG_Decoder_init(&decoder);
   
   img_t** images = malloc((argc-2) * sizeof(img_t*));
-  
-  unsigned i  = 0;
+ 
+  int i;
   for (i = 0; i < argc-2; ++i) {
     unsigned char *buffer, *image;
-    unsigned buffersize, imagesize;
+    size_t buffersize, imagesize;
     LodePNG_loadFile(&buffer, &buffersize, argv[i+2]);
     LodePNG_decode(&decoder, &image, &imagesize, buffer, buffersize);
     
