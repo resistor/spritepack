@@ -88,6 +88,9 @@ static void pop_heap() {
   update_heap();
 }
 
+// When we've determined that this edge is too narrow for
+// any rectangle to fit on, we raise it to match its next
+// tallest neighbor, and merge the two into one larger edge.
 static void raise_edge(edge_t* e) {
   pop_heap();
 
@@ -115,6 +118,9 @@ static void raise_edge(edge_t* e) {
   free(e);
 }
 
+// Given an edge and the width of the rectangle we're placing onto it,
+// split the edge into the part taken up by the rectangle, and the part
+// left over.
 static void split_edge(edge_t* e, unsigned w) {
   // Use the left-placement strategy, from simplicity
   edge_t* new_edge = malloc(sizeof(edge_t));
@@ -133,12 +139,15 @@ static void split_edge(edge_t* e, unsigned w) {
   insert_heap(new_edge);
 }
 
+// rect_t - Linked list node for rectangles
 typedef struct Rect {
   struct Rect* prev;
   struct Rect* next;
   unsigned w, h, idx;
 } rect_t;
 
+// rect2list - Produce a linked list of rect_t*'s from an array
+// of pairs of unsigneds.
 rect_t* rects2list(unsigned* rects, unsigned num_rects) {
   rect_t* head = (rect_t*)malloc(sizeof(rect_t));
   rect_t* ret = head;
