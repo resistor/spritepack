@@ -32,6 +32,7 @@ int image_comparator(const void* a, const void* b) {
   }
 }
 
+int color_type;
 img_t* load_png(char* filename) {
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
@@ -88,7 +89,7 @@ img_t* load_png(char* filename) {
   fclose(fp);
   
   png_uint_32 width, height;
-  int bit_depth, color_type, interlace_type, compression_type, filter_method;
+  int bit_depth, interlace_type, compression_type, filter_method;
   png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth,
                &color_type, &interlace_type, &compression_type, &filter_method);
   
@@ -131,7 +132,7 @@ void write_png(char* filename, unsigned w, unsigned h, unsigned char** data) {
    }
    
    png_init_io(png_ptr, fp);
-   png_set_IHDR(png_ptr, info_ptr, w, h, 8, PNG_COLOR_TYPE_RGB_ALPHA,
+   png_set_IHDR(png_ptr, info_ptr, w, h, 8, color_type,
                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                 PNG_FILTER_TYPE_DEFAULT);
                 
@@ -152,9 +153,6 @@ int main(int argc, char** argv) {
   for (i = 0; i < argc-2; ++i) {
     images[i] = load_png(argv[i+2]);
   }
-  
-  // WHY IS THIS FILE GIBBERISH!?!
-  write_png("test.png", images[0]->w, images[0]->h, images[0]->pixels);
   
   /* Sort the images, because pack_rects expects input in sorted order */
   qsort(images, argc-2, sizeof(img_t*), image_comparator);
