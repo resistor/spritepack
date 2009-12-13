@@ -7,7 +7,7 @@
 /* img_t - A simple wrapper for image data, filename, and width/height */
 typedef struct Img {
     unsigned char* pixels;
-    unsigned char* filename;
+    char* filename;
     unsigned w, h;
 } img_t;
 
@@ -42,10 +42,10 @@ int main(int argc, char** argv) {
   
   /* Loop over the program arguments, decoding input PNGs and
    * creating img_t*'s for them */
-  unsigned i  = 0;
+  int i;
   for (i = 0; i < argc-2; ++i) {
     unsigned char *buffer, *image;
-    unsigned buffersize, imagesize;
+    size_t buffersize, imagesize;
     LodePNG_loadFile(&buffer, &buffersize, argv[i+2]);
     LodePNG_decode(&decoder, &image, &imagesize, buffer, buffersize);
     
