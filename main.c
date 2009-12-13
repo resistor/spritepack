@@ -7,7 +7,7 @@
 
 /* img_t - A simple wrapper for image data, filename, and width/height */
 typedef struct Img {
-    unsigned char* pixels;
+    unsigned char** pixels;
     char* filename;
     unsigned w, h;
 } img_t;
@@ -32,7 +32,7 @@ int image_comparator(const void* a, const void* b) {
   }
 }
 
-unsigned char** load_png(char* filename) {
+img_t* load_png(char* filename) {
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
     fprintf(stderr, "ERROR: Could not open input file %s\n", filename);
@@ -86,8 +86,19 @@ unsigned char** load_png(char* filename) {
   
   unsigned char** ret = png_get_rows(png_ptr, info_ptr);
   fclose(fp);
+  
+  png_uint_32 width, height;
+  int bit_depth, color_type, interlace_type, compression_type, filter_method;
+  png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth,
+               &color_type, &interlace_type, &compression_type, &filter_method);
+  
+  img_t* image = malloc(sizeof(img_t));
+  image->pixels = ret;
+  image->w = width;
+  image->h = height;
+  image->filename = filename;
 
-  return ret;
+  return image;
 }
 
 void write_png(char* filename, unsigned w, unsigned h, unsigned char** data) {
@@ -132,10 +143,6 @@ void write_png(char* filename, unsigned w, unsigned h, unsigned char** data) {
 
 /* Usage: spritepack outfile infile1 infile2 ... */
 int main(int argc, char** argv) {
-  /* Init the PNG decoder */
-  LodePNG_Decoder decoder;
-  LodePNG_Decoder_init(&decoder);
-  
   /* Buffer to hold img_t*'s for the input images */
   img_t** images = malloc((argc-2) * sizeof(img_t*));
   
@@ -143,21 +150,11 @@ int main(int argc, char** argv) {
    * creating img_t*'s for them */
   int i;
   for (i = 0; i < argc-2; ++i) {
-    unsigned char *buffer, *image;
-    size_t buffersize, imagesize;
-    
-    LodePNG_loadFile(&buffer, &buffersize, argv[i+2]);
-    LodePNG_decode(&decoder, &image, &imagesize, buffer, buffersize);
-    
-    images[i] = malloc(sizeof(img_t));
-    images[i]->pixels = image;
-    images[i]->w = decoder.infoPng.width;
-    images[i]->h = decoder.infoPng.height;
-    images[i]->filename = argv[i+2];
-    free(buffer);
+    images[i] = load_png(argv[i+2]);
   }
   
-  LodePNG_Decoder_cleanup(&decoder);
+  // WHY IS THIS FILE GIBBERISH!?!
+  write_png("test.png", images[0]->w, images[0]->h, images[0]->pixels);
   
   /* Sort the images, because pack_rects expects input in sorted order */
   qsort(images, argc-2, sizeof(img_t*), image_comparator);
@@ -216,12 +213,12 @@ int main(int argc, char** argv) {
     unsigned off_y = max_y - ret[2*i+1] - images[i]->h;
     
     unsigned y;
-      for (y = 0; y < images[i]->h; ++y) {
-        unsigned y_pix = off_y + y;
-        memcpy(out_image + (4 * y_pix * max_x + 4 * off_x),
-               images[i]->pixels + (4 * y * images[i]->w),
-               4 * images[i]->w);
-      }
+    for (y = 0; y < images[i]->h; ++y) {
+      unsigned y_pix = off_y + y;
+      memcpy(out_image + (4 * y_pix * max_x + 4 * off_x),
+             images[i]->pixels[y],
+             4 * images[i]->w);
+    }
   }
   
   /* Encode and output the output image */
