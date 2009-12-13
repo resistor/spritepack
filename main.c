@@ -3,7 +3,6 @@
 #include <math.h>
 #include <png.h>
 #include "pack.h"
-#include "lodepng.h"
 
 /* img_t - A simple wrapper for image data, filename, and width/height */
 typedef struct Img {
@@ -201,7 +200,9 @@ int main(int argc, char** argv) {
   }
   
   /* Allocate the output image */
-  unsigned char* out_image = calloc(4 * max_x * max_y, sizeof(unsigned char));
+  unsigned char** out_image = malloc(max_y * sizeof(unsigned char*));
+  for (i = 0; i < (int)max_y; ++i)
+    out_image[i] = calloc(4 * max_x, sizeof(unsigned char));
   
   /* Blit each input image into the output image at the offset determined
    * by the packing.  This is a bit complicated, since the decoded pixels
@@ -213,22 +214,14 @@ int main(int argc, char** argv) {
     unsigned y;
     for (y = 0; y < images[i]->h; ++y) {
       unsigned y_pix = off_y + y;
-      memcpy(out_image + (4 * y_pix * max_x + 4 * off_x),
+      memcpy(out_image[y_pix] + 4 * off_x,
              images[i]->pixels[y],
              4 * images[i]->w);
     }
   }
   
   /* Encode and output the output image */
-  unsigned char* buffer;
-  size_t buffersize;
-  LodePNG_Encoder encoder;
-  LodePNG_Encoder_init(&encoder);
-  LodePNG_encode(&encoder, &buffer, &buffersize, out_image, max_x, max_y);
-  LodePNG_saveFile(buffer, buffersize, argv[1]);
-  LodePNG_Encoder_cleanup(&encoder);
-  free(buffer);
-  free(out_image);
+  write_png(argv[1], max_x, max_y, out_image);
 
   return 0;
 }
