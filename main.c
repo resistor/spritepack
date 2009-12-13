@@ -35,7 +35,7 @@ int image_comparator(const void* a, const void* b) {
 unsigned char** load_png(char* filename) {
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    fprintf(stderr, "ERROR: Could not open input file %s\n", filename);
     exit(-1);
   }
   
@@ -50,7 +50,7 @@ unsigned char** load_png(char* filename) {
   
   png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
   if (!png_ptr) {
-    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    fprintf(stderr, "ERROR: Could not open input file %s\n", filename);
     fclose(fp);
     exit(-1);
   }
@@ -58,7 +58,7 @@ unsigned char** load_png(char* filename) {
   png_infop info_ptr = png_create_info_struct(png_ptr);
   if (!info_ptr) {
     png_destroy_read_struct(&png_ptr, 0, 0);
-    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    fprintf(stderr, "ERROR: Could not open input file %s\n", filename);
     fclose(fp);
     exit(-1);
   }
@@ -66,14 +66,14 @@ unsigned char** load_png(char* filename) {
   png_infop end_info = png_create_info_struct(png_ptr);
   if (!end_info) {
     png_destroy_read_struct(&png_ptr, &info_ptr, 0);
-    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    fprintf(stderr, "ERROR: Could not open input file %s\n", filename);
     fclose(fp);
     exit(-1);
   }
   
   if (setjmp(png_jmpbuf(png_ptr))) {
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    fprintf(stderr, "ERROR: Could not open input file %s\n", filename);
     fclose(fp);
     exit(-1);
   }
@@ -84,7 +84,50 @@ unsigned char** load_png(char* filename) {
   png_read_png(png_ptr, info_ptr,
                PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING, 0);
   
-  return png_get_rows(png_ptr, info_ptr);
+  unsigned char** ret = png_get_rows(png_ptr, info_ptr);
+  fclose(fp);
+
+  return ret;
+}
+
+void write_png(char* filename, unsigned w, unsigned h, unsigned char** data) {
+  FILE* fp = fopen(filename, "wb");
+  if (!fp) {
+    fprintf(stderr, "ERROR: Could not open output file %s\n", filename);
+    exit(-1);
+  }
+  
+  png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
+   if (!png_ptr) {
+     fprintf(stderr, "ERROR: Could not open output file %s\n", filename);
+     fclose(fp);
+     exit(-1);
+   }
+
+   png_infop info_ptr = png_create_info_struct(png_ptr);
+   if (!info_ptr) {
+     png_destroy_read_struct(&png_ptr, 0, 0);
+     fprintf(stderr, "ERROR: Could not open output file %s\n", filename);
+     fclose(fp);
+     exit(-1);
+   }
+   
+   if (setjmp(png_jmpbuf(png_ptr))) {
+     png_destroy_write_struct(&png_ptr, &info_ptr);
+     fprintf(stderr, "ERROR: Could not open output file %s\n", filename);
+     fclose(fp);
+     exit(-1);
+   }
+   
+   png_init_io(png_ptr, fp);
+   png_set_IHDR(png_ptr, info_ptr, w, h, 8, PNG_COLOR_TYPE_RGB_ALPHA,
+                PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+                PNG_FILTER_TYPE_DEFAULT);
+                
+   png_set_rows(png_ptr, info_ptr, data);
+   png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+   
+   fclose(fp);
 }
 
 /* Usage: spritepack outfile infile1 infile2 ... */
