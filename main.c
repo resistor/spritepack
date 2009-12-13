@@ -77,10 +77,7 @@ int main(int argc, char** argv) {
   
   if (width_sum > 2048) width_sum = 2048;
   
-  /* Attempt to find the best packing by choosing a base width,
-   * generating a packing, and repeating with larger widths until
-   * the total megapixels of the image start going back up. */
-
+  /* Explore all valid widths to find the most efficient packing. */
   unsigned best_MP = 0, max_x, max_y;
   unsigned* ret;
   unsigned curr_width;
@@ -101,23 +98,6 @@ int main(int argc, char** argv) {
     } else
       free(new_ret);
   }
-
-  /*
-  while (max_y > max_x) {
-    unsigned new_max_x = max_x * 2;
-    unsigned new_max_y;
-    unsigned* new_ret = pack_rects(rects, argc-2, new_max_x, &new_max_y);
-
-    if (MP != 0.0 && (double)new_max_x * (double)new_max_y > MP) {
-      free(new_ret);
-      break;
-    }
-
-    max_x = new_max_x;
-    max_y = new_max_y;
-    MP = (double)max_x * (double)new_max_y;
-    ret = new_ret;
-  }*/
   
   /* Spew input image offsets */
   for (i = 0; i < argc-2; ++i) {
@@ -135,23 +115,13 @@ int main(int argc, char** argv) {
     unsigned off_x = ret[2*i];
     unsigned off_y = max_y - ret[2*i+1] - images[i]->h;
     
-    unsigned x, y;
-    for (x = 0; x < images[i]->w; ++x) {
+    unsigned y;
       for (y = 0; y < images[i]->h; ++y) {
-        unsigned char r_in = images[i]->pixels[4 * y * images[i]->w + 4 * x + 0];
-        unsigned char g_in = images[i]->pixels[4 * y * images[i]->w + 4 * x + 1];
-        unsigned char b_in = images[i]->pixels[4 * y * images[i]->w + 4 * x + 2];
-        unsigned char a_in = images[i]->pixels[4 * y * images[i]->w + 4 * x + 3];
-        
-        unsigned x_pix = off_x + x;
         unsigned y_pix = off_y + y;
-        
-        out_image[4 * y_pix * max_x + 4 * x_pix + 0] = r_in;
-        out_image[4 * y_pix * max_x + 4 * x_pix + 1] = g_in;
-        out_image[4 * y_pix * max_x + 4 * x_pix + 2] = b_in;
-        out_image[4 * y_pix * max_x + 4 * x_pix + 3] = a_in;
+        memcpy(out_image + (4 * y_pix * max_x + 4 * off_x),
+               images[i]->pixels + (4 * y * images[i]->w),
+               4 * images[i]->w);
       }
-    }
   }
   
   /* Encode and output the output image */
