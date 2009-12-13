@@ -91,10 +91,10 @@ int main(int argc, char** argv) {
     ret = new_ret;
   }
   
-  /*for (i = 0; i < argc-2; ++i) {
+  for (i = 0; i < argc-2; ++i) {
     printf("file %s @ X: %d, Y: %d\n",
            images[i]->filename, ret[2*i], ret[2*i+1]);
-  }*/
+  }
   
   unsigned char* out_image = calloc(4 * max_x * max_y, sizeof(unsigned char));
   
