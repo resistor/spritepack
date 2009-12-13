@@ -65,19 +65,44 @@ int main(int argc, char** argv) {
   /* Create a proxy array of rectangles, which pack_rects will use as input.
    * Note that the indexing matches the indexing into the images array for
    * easy correspondence. */
+  unsigned biggest_width = 0;
+  unsigned width_sum = 0;
   unsigned* rects = malloc(2 * (argc-2) * sizeof(unsigned));
   for (i = 0; i < argc-2; ++i) {
     rects[2*i] = images[i]->w;
     rects[2*i+1] = images[i]->h;
+    if (images[i]->w > biggest_width) biggest_width = images[i]->w;
+    width_sum += images[i]->w;
   }
+  
+  if (width_sum > 2048) width_sum = 2048;
   
   /* Attempt to find the best packing by choosing a base width,
    * generating a packing, and repeating with larger widths until
    * the total megapixels of the image start going back up. */
-  unsigned max_x = 512;
-  unsigned max_y = 513;
-  double MP = 0.0;
+
+  unsigned best_MP = 0, max_x, max_y;
   unsigned* ret;
+  unsigned curr_width;
+  for (curr_width = biggest_width; curr_width <= width_sum; ++curr_width) {
+    unsigned curr_height;
+    unsigned* new_ret = pack_rects(rects, argc-2, curr_width, &curr_height);
+
+    if (curr_height > 2048) {
+      free(new_ret);
+      continue;
+    }
+
+    if (best_MP == 0 || curr_width * curr_height < best_MP) {
+      max_x = curr_width;
+      max_y = curr_height;
+      ret = new_ret;
+      best_MP = curr_width * curr_height;
+    } else
+      free(new_ret);
+  }
+
+  /*
   while (max_y > max_x) {
     unsigned new_max_x = max_x * 2;
     unsigned new_max_y;
@@ -92,7 +117,7 @@ int main(int argc, char** argv) {
     max_y = new_max_y;
     MP = (double)max_x * (double)new_max_y;
     ret = new_ret;
-  }
+  }*/
   
   /* Spew input image offsets */
   for (i = 0; i < argc-2; ++i) {
