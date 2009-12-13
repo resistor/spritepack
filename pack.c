@@ -88,21 +88,11 @@ static void pop_heap() {
   update_heap();
 }
 
-static void verify_list() {
-  edge_t* curr = list->next;
-  while (curr) {
-    if (curr->next) assert(curr->next->prev == curr);
-    curr = curr->next;
-  }
-}
-
 static void raise_edge(edge_t* e) {
   pop_heap();
 
   edge_t* left = e->prev;
   edge_t* right = e->next;
-  
-  verify_list();
   
   if (!right) {
     left->right_x = e->right_x;
@@ -120,12 +110,7 @@ static void raise_edge(edge_t* e) {
     right->prev = left;
   }
   
-  verify_list();
-  
   if (list == e) list = e->next;
-  
-  e->next = (edge_t*) ~0;
-  e->prev = (edge_t*) ~0;
   
   free(e);
 }
@@ -191,7 +176,6 @@ unsigned* pack_rects(unsigned* r, unsigned num_rects, unsigned width, unsigned* 
     edge_t* lowest = lowest_edge();
     while (lowest->right_x - lowest->left_x + 1 < rect_list->w) {
       raise_edge(lowest);
-      verify_list();
       lowest = lowest_edge();
     }
     
