@@ -32,7 +32,7 @@ int image_comparator(const void* a, const void* b) {
   }
 }
 
-unsigned char* load_png(char* filename) {
+unsigned char** load_png(char* filename) {
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
     fprintf(stderr, "ERROR: Could not open file %s\n", filename);
