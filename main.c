@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <png.h>
 #include "pack.h"
 #include "lodepng.h"
 
@@ -31,6 +32,61 @@ int image_comparator(const void* a, const void* b) {
   }
 }
 
+unsigned char* load_png(char* filename) {
+  FILE* fp = fopen(filename, "rb");
+  if (!fp) {
+    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    exit(-1);
+  }
+  
+  png_byte pngsig[8];
+  fread(pngsig, 1, 8, fp);
+  int is_png = !png_sig_cmp(pngsig, 0, 8);
+  if (!is_png) {
+    fprintf(stderr, "ERROR: File %s is not a PNG!\n", filename);
+    fclose(fp);
+    exit(-1);
+  }
+  
+  png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
+  if (!png_ptr) {
+    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    fclose(fp);
+    exit(-1);
+  }
+
+  png_infop info_ptr = png_create_info_struct(png_ptr);
+  if (!info_ptr) {
+    png_destroy_read_struct(&png_ptr, 0, 0);
+    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    fclose(fp);
+    exit(-1);
+  }
+
+  png_infop end_info = png_create_info_struct(png_ptr);
+  if (!end_info) {
+    png_destroy_read_struct(&png_ptr, &info_ptr, 0);
+    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    fclose(fp);
+    exit(-1);
+  }
+  
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+    fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+    fclose(fp);
+    exit(-1);
+  }
+  
+  png_init_io(png_ptr, fp);
+  png_set_sig_bytes(png_ptr, 8);
+  
+  png_read_png(png_ptr, info_ptr,
+               PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING, 0);
+  
+  return png_get_rows(png_ptr, info_ptr);
+}
+
 /* Usage: spritepack outfile infile1 infile2 ... */
 int main(int argc, char** argv) {
   /* Init the PNG decoder */
@@ -46,6 +102,7 @@ int main(int argc, char** argv) {
   for (i = 0; i < argc-2; ++i) {
     unsigned char *buffer, *image;
     size_t buffersize, imagesize;
+    
     LodePNG_loadFile(&buffer, &buffersize, argv[i+2]);
     LodePNG_decode(&decoder, &image, &imagesize, buffer, buffersize);
     
