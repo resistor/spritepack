@@ -26,7 +26,6 @@ int image_comparator(const void* a, const void* b) {
   }
 }
 
-int color_type;
 img_t* load_png(char* filename) {
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
@@ -76,16 +75,40 @@ img_t* load_png(char* filename) {
   png_init_io(png_ptr, fp);
   png_set_sig_bytes(png_ptr, 8);
   
-  png_read_png(png_ptr, info_ptr,
-               PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING, 0);
-  
-  unsigned char** ret = png_get_rows(png_ptr, info_ptr);
-  fclose(fp);
-  
   png_uint_32 width, height;
-  int bit_depth, interlace_type, compression_type, filter_method;
-  png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth,
-               &color_type, &interlace_type, &compression_type, &filter_method);
+  int bit_depth, color_type;
+  
+  png_read_info(png_ptr, info_ptr);
+  png_get_IHDR(png_ptr, info_ptr, &width, &height,
+               &bit_depth, &color_type, NULL, NULL, NULL);
+
+  if (color_type == PNG_COLOR_TYPE_PALETTE)
+    png_set_expand (png_ptr);
+  if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+    png_set_expand (png_ptr);
+  if (png_get_valid (png_ptr, info_ptr, PNG_INFO_tRNS))
+    png_set_expand (png_ptr);
+  if (bit_depth == 16)
+    png_set_strip_16 (png_ptr);
+  if (color_type == PNG_COLOR_TYPE_GRAY ||
+    color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+    png_set_gray_to_rgb (png_ptr);
+
+  png_read_update_info (png_ptr, info_ptr);
+  png_get_IHDR (png_ptr, info_ptr, &width, &height, &bit_depth, &color_type,
+    NULL, NULL, NULL);
+
+  unsigned row_bytes = png_get_rowbytes (png_ptr, info_ptr);
+
+  unsigned char* png_pixels = malloc (row_bytes * height * sizeof (png_byte));
+  unsigned char** ret = malloc(height * sizeof (png_bytep));
+  unsigned i;
+  for (i = 0; i < (height); i++)
+    ret[i] = png_pixels + i * row_bytes;
+
+  png_read_image (png_ptr, ret);
+  png_read_end (png_ptr, info_ptr);
+  fclose(fp);
   
   img_t* image = malloc(sizeof(img_t));
   image->pixels = ret;
@@ -128,7 +151,7 @@ void write_png(char* filename, unsigned w, unsigned h, unsigned char** data) {
    }
    
    png_init_io(png_ptr, fp);
-   png_set_IHDR(png_ptr, info_ptr, w, h, 8, color_type,
+   png_set_IHDR(png_ptr, info_ptr, w, h, 8, PNG_COLOR_TYPE_RGB_ALPHA,
                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                 PNG_FILTER_TYPE_DEFAULT);
                 
