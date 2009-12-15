@@ -2,14 +2,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <png.h>
-#include "pack.h"
 
-/* img_t - A simple wrapper for image data, filename, and width/height */
-typedef struct Img {
-    unsigned char** pixels;
-    char* filename;
-    unsigned w, h;
-} img_t;
+#include "img.h"
+#include "pack.h"
 
 /* image_comparator - a qsort-compatible comparison function for img_t*'s
  * Sorts first by width, then height */
