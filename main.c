@@ -89,6 +89,8 @@ img_t* load_png(char* filename) {
   
   img_t* image = malloc(sizeof(img_t));
   image->pixels = ret;
+  image->top = 0;
+  image->left = 0;
   image->w = width;
   image->h = height;
   image->filename = filename;
@@ -207,10 +209,10 @@ int main(int argc, char** argv) {
     unsigned off_y = max_y - ret[2*i+1] - images[i]->h;
     
     unsigned y;
-    for (y = 0; y < images[i]->h; ++y) {
+    for (y = images[i]->top; y < images[i]->h; ++y) {
       unsigned y_pix = off_y + y;
       memcpy(out_image[y_pix] + 4 * off_x,
-             images[i]->pixels[y],
+             images[i]->pixels[y] + images[i]->left,
              4 * images[i]->w);
     }
   }
