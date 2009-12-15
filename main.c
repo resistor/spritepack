@@ -171,6 +171,7 @@ int main(int argc, char** argv) {
   int i;
   for (i = 0; i < argc-2; ++i) {
     images[i] = load_png(argv[i+2]);
+    autotrim(images[i]);
   }
   
   /* Sort the images, because pack_rects expects input in sorted order */
@@ -235,7 +236,7 @@ int main(int argc, char** argv) {
     for (y = images[i]->top; y < images[i]->h; ++y) {
       unsigned y_pix = off_y + y;
       memcpy(out_image[y_pix] + 4 * off_x,
-             images[i]->pixels[y] + images[i]->left,
+             images[i]->pixels[y] + 4 * images[i]->left,
              4 * images[i]->w);
     }
   }

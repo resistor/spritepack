@@ -5,7 +5,10 @@
 typedef struct Img {
     unsigned char** pixels;
     char* filename;
+    unsigned top, left;
     unsigned w, h;
 } img_t;
+
+void autotrim(img_t* i);
 
 #endif

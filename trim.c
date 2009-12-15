@@ -16,7 +16,7 @@ void autotrim(img_t* i) {
     if (!isBlank)
       break;
   }
-  i->top = row;
+  unsigned top_most = row;
   
   // Trim left
   for (column = 0; column < i->w; ++column) {
@@ -30,7 +30,7 @@ void autotrim(img_t* i) {
     if (!isBlank)
       break;
   }
-  i->left = column;
+  unsigned left_most = column;
   
   // Trip bottom
   for (row = i->h - 1; row != ~0U; --row) {
@@ -44,7 +44,7 @@ void autotrim(img_t* i) {
     if (!isBlank)
       break;
   }
-  i->h = row + 1;
+  unsigned bottom_most = row;
   
   // Trip right
   for (column = i->w - 1; column != ~0U; --column) {
@@ -58,5 +58,10 @@ void autotrim(img_t* i) {
     if (!isBlank)
       break;
   }
-  i->w = column + 1;
+  unsigned right_most = column;
+  
+  i->top = top_most;
+  i->left = left_most;
+  i->h = bottom_most - top_most + 1;
+  i->w = right_most - left_most + 1;
 }
