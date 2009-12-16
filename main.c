@@ -233,10 +233,10 @@ int main(int argc, char** argv) {
     unsigned off_y = max_y - ret[2*i+1] - images[i]->h;
     
     unsigned y;
-    for (y = images[i]->top; y < images[i]->h; ++y) {
+    for (y = 0; y < images[i]->h; ++y) {
       unsigned y_pix = off_y + y;
       memcpy(out_image[y_pix] + 4 * off_x,
-             images[i]->pixels[y] + 4 * images[i]->left,
+             images[i]->pixels[images[i]->top + y] + 4 * images[i]->left,
              4 * images[i]->w);
     }
   }
