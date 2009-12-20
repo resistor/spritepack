@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -247,7 +248,7 @@ int main(int argc, char** argv) {
   comments.text[0] = 0;
   
   char* num_sprites;
-  asprintf(&num_sprites, "%d\n", argc-2);
+  asprintf(&num_sprites, "%d", argc-2);
   while (strlen(comments.text) + strlen(num_sprites) + 1 > text_space) {
     text_space *= 2;
     comments.text = realloc(comments.text, text_space);
@@ -256,8 +257,7 @@ int main(int argc, char** argv) {
   
   for (i = 0; i < argc-2; ++i) {
     char* output;
-    asprintf(&output, "%s: %d, %d, %d, %d, %d, %d\n",
-/* filename */            images[i]->filename,
+    asprintf(&output, ", %d, %d, %d, %d, %d, %d",
 /* top left corner */     images[i]->offset_x, images[i]->offset_y,
 /* bottom right corner */ images[i]->offset_x + images[i]->w, images[i]->offset_y + images[i]->h,
 /* center offset */       images[i]->center_x, images[i]->center_y);
@@ -272,8 +272,6 @@ int main(int argc, char** argv) {
   
   comments.text_length = strlen(comments.text);
   
-  printf("%s", comments.text);
-  
   /* Allocate the output image */
   unsigned char** out_image = malloc(max_y * sizeof(unsigned char*));
   for (i = 0; i < (int)max_y; ++i)
@@ -283,8 +281,8 @@ int main(int argc, char** argv) {
    * by the packing.  This is a bit complicated, since the decoded pixels
    * are indexed from the top-left, while the packing uses bottom-left indexing */
   for (i = 0; i < argc-2; ++i) {
-    unsigned off_x = ret[2*i];
-    unsigned off_y = max_y - ret[2*i+1] - images[i]->h;
+    unsigned off_x = images[i]->offset_x;
+    unsigned off_y = images[i]->offset_y;
     
     unsigned y;
     for (y = 0; y < images[i]->h; ++y) {
