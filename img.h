@@ -5,6 +5,9 @@
 typedef struct Img {
     unsigned char** pixels;
     char* filename;
+    
+    unsigned offset_x, offset_y;
+    unsigned center_x, center_y;
     unsigned top, left;
     unsigned w, h;
 } img_t;

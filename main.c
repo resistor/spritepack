@@ -26,6 +26,13 @@ int image_comparator(const void* a, const void* b) {
   }
 }
 
+int filename_comparator(const void* a, const void* b) {
+  img_t* aimg = *(img_t**)a;
+  img_t* bimg = *(img_t**)b;
+  
+  return strcmp(aimg->filename, bimg->filename);
+}
+
 img_t* load_png(char* filename) {
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
@@ -116,12 +123,15 @@ img_t* load_png(char* filename) {
   image->left = 0;
   image->w = width;
   image->h = height;
+  image->center_x = width / 2;
+  image->center_y = height / 2;
   image->filename = filename;
 
   return image;
 }
 
-void write_png(char* filename, unsigned w, unsigned h, unsigned char** data) {
+void write_png(char* filename, unsigned w, unsigned h,
+               unsigned char** data, png_text* comments) {
   FILE* fp = fopen(filename, "wb");
   if (!fp) {
     fprintf(stderr, "ERROR: Could not open output file %s\n", filename);
@@ -154,7 +164,8 @@ void write_png(char* filename, unsigned w, unsigned h, unsigned char** data) {
    png_set_IHDR(png_ptr, info_ptr, w, h, 8, PNG_COLOR_TYPE_RGB_ALPHA,
                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                 PNG_FILTER_TYPE_DEFAULT);
-                
+  png_set_text(png_ptr, info_ptr, comments, 1);
+  
    png_set_rows(png_ptr, info_ptr, data);
    png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
    
@@ -214,11 +225,54 @@ int main(int argc, char** argv) {
       free(new_ret);
   }
   
-  /* Spew input image offsets */
+  // Copy the data returned by the packer back into the img_t structures.
   for (i = 0; i < argc-2; ++i) {
-    printf("file %s @ X: %d, Y: %d\n",
-           images[i]->filename, ret[2*i], ret[2*i+1]);
+    images[i]->offset_x = ret[2*i];
+    images[i]->offset_y = max_y - ret[2*i+1] - images[i]->h;
   }
+  free(ret);
+  
+  // Sort the images by filename again
+  qsort(images, argc-2, sizeof(img_t*), filename_comparator);
+  
+  /* Spew input image offsets */
+  png_text comments;
+  comments.compression = PNG_TEXT_COMPRESSION_zTXt;
+  comments.key = "sprite";
+  
+  
+  // Setup the comments string for printf'ing.
+  unsigned text_space = 2 * (argc-1) + 1;
+  comments.text = malloc(text_space);
+  comments.text[0] = 0;
+  
+  char* num_sprites;
+  asprintf(&num_sprites, "%d\n", argc-2);
+  while (strlen(comments.text) + strlen(num_sprites) + 1 > text_space) {
+    text_space *= 2;
+    comments.text = realloc(comments.text, text_space);
+  }
+  comments.text = strncat(comments.text, num_sprites, strlen(num_sprites));
+  
+  for (i = 0; i < argc-2; ++i) {
+    char* output;
+    asprintf(&output, "%s: %d, %d, %d, %d, %d, %d\n",
+/* filename */            images[i]->filename,
+/* top left corner */     images[i]->offset_x, images[i]->offset_y,
+/* bottom right corner */ images[i]->offset_x + images[i]->w, images[i]->offset_y + images[i]->h,
+/* center offset */       images[i]->center_x, images[i]->center_y);
+    //printf("%s\n", output);
+    
+    while (strlen(comments.text) + strlen(output) + 1 > text_space) {
+      text_space *= 2;
+      comments.text = realloc(comments.text, text_space);
+    }
+    comments.text = strncat(comments.text, output, strlen(output));
+  }
+  
+  comments.text_length = strlen(comments.text);
+  
+  printf("%s", comments.text);
   
   /* Allocate the output image */
   unsigned char** out_image = malloc(max_y * sizeof(unsigned char*));
@@ -242,7 +296,7 @@ int main(int argc, char** argv) {
   }
   
   /* Encode and output the output image */
-  write_png(argv[1], max_x, max_y, out_image);
+  write_png(argv[1], max_x, max_y, out_image, &comments);
 
   return 0;
 }

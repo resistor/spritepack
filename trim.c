@@ -62,6 +62,9 @@ void autotrim(img_t* i) {
   
   i->top = top_most;
   i->left = left_most;
+  i->center_x -= left_most;
+  i->center_y -= top_most;
+  
   i->h = bottom_most - top_most + 1;
   i->w = right_most - left_most + 1;
 }
